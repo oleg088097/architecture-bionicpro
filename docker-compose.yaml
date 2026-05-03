@@ -13,7 +13,7 @@ services:
       - "5433:5432"
 
   keycloak:
-    image: quay.io/keycloak/keycloak:21.1
+    image: quay.io/keycloak/keycloak:26.6
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -21,7 +21,8 @@ services:
       KC_DB_URL: jdbc:postgresql://keycloak_db:5432/keycloak_db
       KC_DB_USERNAME: keycloak_user
       KC_DB_PASSWORD: keycloak_password
-    command: 
+      KC_HOSTNAME_DEBUG: "true"
+    command:
       - start-dev
       - --import-realm
     volumes:
@@ -38,7 +39,24 @@ services:
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:8000
-      REACT_APP_KEYCLOAK_URL: http://localhost:8080
-      REACT_APP_KEYCLOAK_REALM: reports-realm
-      REACT_APP_KEYCLOAK_CLIENT_ID: reports-frontend
+      REACT_APP_AUTH_API_URL: http://localhost:4000
+
+  bionicpro-auth:
+    build:
+      context: ./task1/bionicpro-auth
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    #    extra_hosts:
+    #      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: 4000
+      #      KEYCLOAK_AUTH_SERVER_URL: http://host.docker.internal:8080
+      KEYCLOAK_AUTH_SERVER_URL: http://keycloak:8080/realms/reports-realm
+      KEYCLOAK_CLIENT_ID: bionicpro-auth
+      KEYCLOAK_CLIENT_SECRET: lPU9LFUfFfzBy2uh7MPJMuHSGzMp0VFM
+      OAUTH2_CLIENT_REGISTRATION_LOGIN_SCOPE: openid
+      OIDC_CALLBACK_URL: http://localhost:4000/callback
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      - keycloak

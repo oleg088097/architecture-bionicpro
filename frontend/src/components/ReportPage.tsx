@@ -1,13 +1,37 @@
-import React, { useState } from 'react';
-import { useKeycloak } from '@react-keycloak/web';
+import React, {useEffect, useState} from 'react';
+
+interface User {
+  access_token?: string,
+  refresh_token?: string,
+}
 
 const ReportPage: React.FC = () => {
-  const { keycloak, initialized } = useKeycloak();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState(null as User | null)
+
+  useEffect(() => {
+    // Create a scoped async function in the hook
+    async function runAsync() {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_AUTH_API_URL}/user`, {credentials: 'include'});
+        if (response.ok) {
+          const userResponse = await response.text();
+          setUser(JSON.parse(userResponse));
+        }
+      } catch (error) {
+        // add better error handling here
+      }
+    }
+
+    // Execute the created function directly
+    runAsync()
+    // https://stackoverflow.com/a/55854902/1098564
+    // eslint-disable-next-line
+  }, [])
 
   const downloadReport = async () => {
-    if (!keycloak?.token) {
+    if (!user) {
       setError('Not authenticated');
       return;
     }
@@ -16,13 +40,8 @@ const ReportPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/reports`, {
-        headers: {
-          'Authorization': `Bearer ${keycloak.token}`
-        }
-      });
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/reports`, {credentials: 'include'});
 
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -30,19 +49,15 @@ const ReportPage: React.FC = () => {
     }
   };
 
-  if (!initialized) {
-    return <div>Loading...</div>;
-  }
-
-  if (!keycloak.authenticated) {
+  if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-        <button
-          onClick={() => keycloak.login()}
+        <a
+          href={`${process.env.REACT_APP_AUTH_API_URL}/login?redirectUrl=${encodeURI(window.location.href)}`}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
           Login
-        </button>
+        </a>
       </div>
     );
   }
@@ -51,7 +66,7 @@ const ReportPage: React.FC = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="p-8 bg-white rounded-lg shadow-md">
         <h1 className="text-2xl font-bold mb-6">Usage Reports</h1>
-        
+
         <button
           onClick={downloadReport}
           disabled={loading}
