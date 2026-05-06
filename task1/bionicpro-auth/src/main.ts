@@ -3,20 +3,6 @@ import {AppModule} from './app.module';
 import {memoryStore} from "./memory-store";
 import session from "express-session";
 import passport from 'passport';
-import {UserInfoResponse} from "oauth4webapi";
-
-declare module 'express-session' {
-  interface SessionData {
-    redirectUrl: string;
-  }
-}
-declare global {
-  namespace Express {
-    interface User {
-      userinfo: UserInfoResponse;
-    }
-  }
-}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

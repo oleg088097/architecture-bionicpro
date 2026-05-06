@@ -2,16 +2,22 @@ import {Module} from '@nestjs/common';
 import {ConfigModule, ConfigService} from '@nestjs/config';
 import {AppController} from './app.controller';
 import {PassportModule} from "@nestjs/passport";
-import {buildOpenIdClient, OidcStrategy} from "./login-strategy/oidc.strategy";
+import {buildOpenIdClient, OidcStrategy} from "./oidc/oidc.strategy";
 import {SessionSerializer} from "./session.serializer";
+import {TokenRefreshCoordinator} from "./refresh-token/token-refresh.coordinator";
+import {RefreshAccessTokenGuard} from "./refresh-token/refresh-access-token.guard";
+
+const OidcConfigurationProvider = {
+  provide: 'OIDC_CONFIGURATION',
+  useFactory: buildOpenIdClient,
+  inject: [ConfigService],
+};
 
 const OidcStrategyFactory = {
-  provide: 'OidcStrategy',
-  useFactory: async (configService: ConfigService) => {
-    const client = await buildOpenIdClient(configService);
-    return new OidcStrategy(client);
-  },
-  inject: [ConfigService]
+  provide: OidcStrategy,
+  useFactory: (configuration: Awaited<ReturnType<typeof buildOpenIdClient>>) =>
+    new OidcStrategy(configuration),
+  inject: ['OIDC_CONFIGURATION'],
 };
 
 @Module({
@@ -21,7 +27,13 @@ const OidcStrategyFactory = {
     }),
     PassportModule.register({session: true, defaultStrategy: 'oidc'}),
   ],
-  providers: [OidcStrategyFactory, SessionSerializer],
+  providers: [
+    OidcConfigurationProvider,
+    OidcStrategyFactory,
+    SessionSerializer,
+    TokenRefreshCoordinator,
+    RefreshAccessTokenGuard,
+  ],
   controllers: [AppController],
 })
 export class AppModule {
