@@ -3,6 +3,7 @@ import {AppModule} from './app.module';
 import {memoryStore} from "./memory-store";
 import session from "express-session";
 import passport from 'passport';
+import {SessionRotationMiddleware} from "./session-rotation/session-rotation.middleware";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -30,6 +31,9 @@ async function bootstrap() {
   );
   app.use(passport.initialize());
   app.use(passport.session());
+
+  const sessionRotationMiddleware = new SessionRotationMiddleware();
+  app.use(sessionRotationMiddleware.next.bind(sessionRotationMiddleware));
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
