@@ -6,6 +6,7 @@ interface User {
 }
 
 function parseFilenameFromContentDisposition(header: string | null): string | null {
+  // RFC 5987 filename* first, then quoted or plain filename= (backend uses filename="...").
   if (!header) return null;
   const utf8Match = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i);
   if (utf8Match) {
@@ -25,20 +26,19 @@ const ReportPage: React.FC = () => {
   const [user, setUser] = useState(null as User | null)
 
   useEffect(() => {
-    // Create a scoped async function in the hook
     async function runAsync() {
       try {
+        // Session cookie is host-scoped; credentials sends cookies set by bionicpro-auth on login.
         const response = await fetch(`${process.env.REACT_APP_AUTH_API_URL}/user`, {credentials: 'include'});
         if (response.ok) {
           const userResponse = await response.text();
           setUser(JSON.parse(userResponse));
         }
       } catch (error) {
-        // add better error handling here
+        // Ignore: unauthenticated users see the login link below.
       }
     }
 
-    // Execute the created function directly
     runAsync()
     // https://stackoverflow.com/a/55854902/1098564
     // eslint-disable-next-line
@@ -59,6 +59,7 @@ const ReportPage: React.FC = () => {
       });
 
       if (!response.ok) {
+        // FastAPI errors are JSON { detail }; fall back to raw body text.
         const text = await response.text();
         let message = text || response.statusText || `Request failed (${response.status})`;
         try {
@@ -75,6 +76,7 @@ const ReportPage: React.FC = () => {
         return;
       }
 
+      // Updates HttpOnly cookies from bionicpro-auth without JS reading them.
       const blob = await response.blob();
       const filename =
         parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')) ??
@@ -88,7 +90,7 @@ const ReportPage: React.FC = () => {
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url); // Allow GC after the synthetic click.
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
