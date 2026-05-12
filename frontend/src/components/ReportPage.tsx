@@ -57,10 +57,10 @@ const ReportPage: React.FC = () => {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/reports`, {
         credentials: 'include',
       });
+      const text = await response.text();
 
       if (!response.ok) {
         // FastAPI errors are JSON { detail }; fall back to raw body text.
-        const text = await response.text();
         let message = text || response.statusText || `Request failed (${response.status})`;
         try {
           const body = JSON.parse(text) as {detail?: string | string[]};
@@ -77,6 +77,18 @@ const ReportPage: React.FC = () => {
       }
 
       // Updates HttpOnly cookies from bionicpro-auth without JS reading them.
+      const anchor = document.createElement('a');
+      const body = JSON.parse(text) as {url: string};
+      anchor.href = body.url;
+      anchor.download = '';
+      anchor.rel = 'noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+
+      /*
+      //BEFORE CDN
+      // Updates HttpOnly cookies from bionicpro-auth without JS reading them.
       const blob = await response.blob();
       const filename =
         parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')) ??
@@ -91,6 +103,7 @@ const ReportPage: React.FC = () => {
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url); // Allow GC after the synthetic click.
+      */
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
