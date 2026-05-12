@@ -5,6 +5,20 @@ interface User {
   refresh_token?: string,
 }
 
+function parseFilenameFromContentDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const utf8Match = header.match(/filename\*=(?:UTF-8'')?([^;]+)/i);
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim().replace(/^"|"$/g, ''));
+    } catch {
+      return utf8Match[1].trim().replace(/^"|"$/g, '');
+    }
+  }
+  const asciiMatch = header.match(/filename="([^"]+)"/i) ?? header.match(/filename=([^;\s]+)/i);
+  return asciiMatch ? asciiMatch[1].trim() : null;
+}
+
 const ReportPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,8 +54,41 @@ const ReportPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/reports`, {credentials: 'include'});
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/reports`, {
+        credentials: 'include',
+      });
 
+      if (!response.ok) {
+        const text = await response.text();
+        let message = text || response.statusText || `Request failed (${response.status})`;
+        try {
+          const body = JSON.parse(text) as {detail?: string | string[]};
+          if (body.detail !== undefined) {
+            message = Array.isArray(body.detail)
+              ? body.detail.join(', ')
+              : String(body.detail);
+          }
+        } catch {
+          /* plain-text body */
+        }
+        setError(message);
+        return;
+      }
+
+      const blob = await response.blob();
+      const filename =
+        parseFilenameFromContentDisposition(response.headers.get('Content-Disposition')) ??
+        'report.csv';
+
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.rel = 'noopener';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

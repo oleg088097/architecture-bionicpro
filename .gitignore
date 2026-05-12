@@ -5,3 +5,6 @@ node_modules/
 dist/
 ldap/slapd-config
 ldap/slapd-database
+.venv
+clickhouse-data/status
+clickhouse-data/uuid

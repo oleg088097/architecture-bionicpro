@@ -94,6 +94,23 @@ services:
       - keycloak
     network_mode: host
 
+  reports-api:
+    build:
+      context: ./reports-api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      BIONICPRO_AUTH_URL: http://localhost:4000
+      CLICKHOUSE_HOST: localhost
+      CLICKHOUSE_HTTP_PORT: "8123"
+      CLICKHOUSE_DATABASE: default
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      - olap_db
+      - bionicpro-auth
+    network_mode: host
+
   openldap:
     image: osixia/openldap:1.5.0
     command: --copy-service  --loglevel debug
