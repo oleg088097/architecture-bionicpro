@@ -289,6 +289,93 @@ services:
     networks:
       - dag_sample
 
+  kafka:
+    image: confluentinc/cp-kafka:8.2.0
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 1
+    network_mode: host
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:8.2.0
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "localhost:9092"
+      CONNECT_GROUP_ID: "quickstart"
+      CONNECT_CONFIG_STORAGE_TOPIC: "quickstart-config"
+      CONNECT_OFFSET_STORAGE_TOPIC: "quickstart-offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "quickstart-status"
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: "1"
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: "1"
+
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+
+      CONNECT_REST_ADVERTISED_HOST_NAME: "localhost"
+      #  ---------------
+      CONNECT_PLUGIN_PATH: /usr/share/java,/usr/share/confluent-hub-components,/data/connect-jars
+    # If you want to use the Confluent Hub installer to d/l component, but make them available
+    # when running this offline, spin up the stack once and then run :
+    #   docker cp kafka-connect:/usr/share/confluent-hub-components ./kafka/connect-jars
+    volumes:
+      - $PWD/kafka:/data
+    # In the command section, $ are replaced with $$ to avoid the error 'Invalid interpolation format for "command" option'
+    command:
+      - bash
+      - -c
+      - |
+        echo "Installing Connector"
+        confluent-hub install --no-prompt debezium/debezium-connector-postgresql:3.2.6-1
+        #
+        echo "Launching Kafka Connect worker"
+        /etc/confluent/docker/run &
+        
+        echo "Waiting for Kafka Connect REST API..."
+        until curl -s http://localhost:8083/connectors > /dev/null; do
+          sleep 5
+        done
+
+        echo "Checking connector existence..."
+  
+        curl -s -o /dev/null \
+          -w "%{http_code}" \
+          http://localhost:8083/connectors/customers-connector \
+          > /tmp/status_code.txt
+        
+        if grep -q "^200$" /tmp/status_code.txt; then        
+          echo "Connector exists. Deleting it..."
+        
+          curl -X DELETE  \
+            http://localhost:8083/connectors/customers-connector
+        fi
+          
+        echo "Creating with POST..."
+      
+        curl -X POST \
+          http://localhost:8083/connectors \
+          -H "Content-Type: application/json" \
+          --data @/data/customers-connector.json
+        
+        sleep infinity
+    network_mode: host
+
 networks:
   dag_sample:
 

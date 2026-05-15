@@ -281,7 +281,9 @@ async def get_report(
     if parsed_date is not None:
         q = """
             SELECT user_id, email, report, from_date, to_date
-            FROM reports
+            --BEFORE CDC
+            --FROM reports
+            FROM cdc_reports
             WHERE email = {email:String}
               AND toDate(from_date) = {report_date:Date}
             ORDER BY to_date DESC
@@ -291,7 +293,9 @@ async def get_report(
     else:
         q = """
             SELECT user_id, email, report, from_date, to_date
-            FROM reports
+            --BEFORE CDC
+            --FROM reports
+            FROM cdc_reports
             WHERE email = {email:String}
             ORDER BY from_date DESC, to_date DESC
             LIMIT 1

@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS customers (
     phone VARCHAR(25)
     );
 
+ALTER TABLE customers REPLICA IDENTITY FULL;
+
 COPY customers(id, name, email, age, gender, country, address, phone)
     FROM '/docker-entrypoint-initdb.d/crm.csv'
     DELIMITER ','

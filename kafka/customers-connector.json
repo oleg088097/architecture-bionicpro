@@ -1,0 +1,19 @@
+{
+  "name": "customers-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "localhost",
+    "database.port": "5444",
+    "database.user": "crm_user",
+    "database.password": "crm_password",
+    "database.dbname" : "crm_db",
+    "topic.prefix": "customers3",
+    "table.include.list": "public.customers",
+    "plugin.name": "pgoutput",
+    "transforms": "flatten",
+    "transforms.flatten.type": "org.apache.kafka.connect.transforms.Flatten$Value",
+    "transforms.flatten.delimiter": ".",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false"
+  }
+}
