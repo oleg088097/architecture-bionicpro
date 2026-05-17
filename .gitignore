@@ -1,2 +1,13 @@
 /postgres-keycloak-data
 2024__yandex-architecture-sso.code-workspace
+.idea
+node_modules/
+dist/
+ldap/slapd-config
+ldap/slapd-database
+.venv
+clickhouse-data/status
+clickhouse-data/uuid
+postgres-crm-data/
+!postgres-crm-data/postgresql.conf
+kafka/connect-jars
