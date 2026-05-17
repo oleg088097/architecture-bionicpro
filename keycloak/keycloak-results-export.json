@@ -2054,11 +2054,11 @@
           ]
         },
         "config": {
-          "fullSyncPeriod": [
-            "-1"
-          ],
           "pagination": [
             "true"
+          ],
+          "fullSyncPeriod": [
+            "-1"
           ],
           "connectionTrace": [
             "false"
@@ -2066,11 +2066,11 @@
           "startTls": [
             "false"
           ],
-          "usersDn": [
-            "ou=People,dc=example,dc=com"
-          ],
           "connectionPooling": [
             "true"
+          ],
+          "usersDn": [
+            "ou=People,dc=example,dc=com"
           ],
           "cachePolicy": [
             "DEFAULT"
@@ -2084,14 +2084,14 @@
           "enabled": [
             "true"
           ],
+          "changedSyncPeriod": [
+            "-1"
+          ],
           "bindDn": [
             "cn=admin,dc=example,dc=com"
           ],
           "usernameLDAPAttribute": [
             "uid"
-          ],
-          "changedSyncPeriod": [
-            "-1"
           ],
           "bindCredential": [
             "**********"
@@ -2106,7 +2106,7 @@
             "false"
           ],
           "connectionUrl": [
-            "ldap://openldap:389"
+            "ldap://localhost:389"
           ],
           "syncRegistrations": [
             "false"
